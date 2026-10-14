@@ -1,0 +1,69 @@
+# =========================
+# Python / FastAPI Backend
+# =========================
+
+# Virtual environments
+backend/.venv/
+backend/venv/
+backend/env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Build and package files
+build/
+dist/
+*.egg-info/
+
+# =========================
+# React / Vite Frontend
+# =========================
+
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Environment variables
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# =========================
+# Uploaded files
+# =========================
+
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# =========================
+# Databases
+# =========================
+
+*.db
+*.sqlite
+*.sqlite3
+
+# =========================
+# IDE and OS files
+# =========================
+
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
