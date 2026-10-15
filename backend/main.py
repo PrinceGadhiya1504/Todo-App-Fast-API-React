@@ -28,16 +28,23 @@ ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png"}
 items = [
     {
         "id": 1,
-        "name": "Learn React",
-        "description": "Practice React basics",
+        "name": "Build a React Todo App",
+        "description": "Create a Todo application using React and Tailwind CSS. Add features to create, edit, delete, and mark tasks as completed.",
         "status": "pending",
         "image": None,
     },
     {
         "id": 2,
-        "name": "Learn Flask",
-        "description": "",
+        "name": "Develop REST APIs with FastAPI",
+        "description": "Build REST API endpoints to create, retrieve, update, and delete Todo items. Implement request validation and connect the API with the React frontend.",
         "status": "completed",
+        "image": None,
+    },
+    {
+        "id": 3,
+        "name": "Update GitHub Project Portfolio",
+        "description": "Upload the completed Todo project to GitHub.",
+        "status": "pending",
         "image": None,
     },
 ]

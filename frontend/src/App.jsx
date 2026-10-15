@@ -4,6 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "./components/ui/textarea";
+import { Eye, Pencil, Trash } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "./components/ui/dialog";
 
 const API_URL = "http://127.0.0.1:8000";
 
@@ -15,6 +22,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState(null);
   const fileInputRef = useRef(null);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   const fetchItems = async () => {
     try {
@@ -169,7 +177,7 @@ function App() {
             </p>
           </CardHeader>
 
-          <CardContent className="p-5">
+          <CardContent className="p-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Input
@@ -288,18 +296,6 @@ function App() {
                             {item.name}
                           </h3>
                         </div>
-
-                        <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-500">
-                          {item.description}
-                        </p>
-
-                        {item.image && (
-                          <img
-                            src={`${API_URL}${item.image}`}
-                            alt={item.name}
-                            className="mt-2 max-h-20 w-auto max-w-full rounded-lg border border-slate-200 object-cover"
-                          />
-                        )}
                       </div>
 
                       <div className="col-start-2 flex flex-wrap items-start gap-2 border-t border-slate-100 pt-3 sm:col-start-3 sm:row-start-1 sm:flex-nowrap sm:justify-end sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
@@ -307,9 +303,19 @@ function App() {
                           type="button"
                           variant="outline"
                           size="sm"
+                          className="gap-1.5"
+                          onClick={() => setSelectedItem(item)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={() => editItem(item)}
                         >
-                          Edit
+                          <Pencil className="h-4 w-4" />
                         </Button>
 
                         <Button
@@ -318,7 +324,7 @@ function App() {
                           size="sm"
                           onClick={() => deleteItem(item.id)}
                         >
-                          Delete
+                          <Trash className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -328,6 +334,73 @@ function App() {
             </div>
           )}
         </section>
+
+        <Dialog
+          open={selectedItem !== null}
+          onOpenChange={(open) => {
+            if (!open) setSelectedItem(null);
+          }}
+        >
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+            {selectedItem && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="break-words pr-6 text-xl">
+                    {selectedItem.name}
+                  </DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
+                      Task #{selectedItem.id}
+                    </span>
+
+                    <span
+                      className={`rounded-full px-3 py-1 text-sm font-medium ${
+                        selectedItem.status === "completed"
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-amber-50 text-amber-700"
+                      }`}
+                    >
+                      {selectedItem.status === "completed"
+                        ? "Completed"
+                        : "Pending"}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-semibold text-slate-800">
+                      Description
+                    </h4>
+
+                    <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-600">
+                      {selectedItem.description || "No description provided."}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-slate-800">
+                      Attached Image
+                    </h4>
+
+                    {selectedItem.image ? (
+                      <img
+                        src={`${API_URL}${selectedItem.image}`}
+                        alt={selectedItem.name}
+                        className="max-h-80 w-full rounded-lg border border-slate-200 object-contain"
+                      />
+                    ) : (
+                      <p className="rounded-lg border border-dashed border-slate-200 p-5 text-center text-sm text-slate-500">
+                        No image attached.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
