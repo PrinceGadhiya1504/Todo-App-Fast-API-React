@@ -1,122 +1,336 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useRef, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "./components/ui/textarea";
+
+const API_URL = "http://127.0.0.1:8000";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [items, setItems] = useState([]);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [file, setFile] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const fetchItems = async () => {
+    try {
+      const response = await fetch(`${API_URL}/items`);
+      if (!response.ok) {
+        throw new Error("failed to fetch todos");
+      }
+      const data = await response.json();
+      setItems(data);
+    } catch (error) {
+      console.error("Fetch error:", error);
+      alert("Todos load nahi hue. Flask server check karo.");
+    }
+  };
+
+  const completedCount = items.filter(
+    (item) => item.status === "completed",
+  ).length;
+  const pendingCount = items.filter((item) => item.status === "pending").length;
+
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!name.trim()) return;
+
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("description", description);
+
+    if (editId === null) {
+      formData.append("status", "pending");
+    }
+    if (file) formData.append("image", file);
+
+    const isEditItem = editId !== null;
+
+    const url = isEditItem ? `${API_URL}/items/${editId}` : `${API_URL}/items`;
+
+    try {
+      setLoading(true);
+
+      const response = await fetch(url, {
+        method: isEditItem ? "PUT" : "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Could not add todo");
+      }
+
+      resetForm();
+      await fetchItems();
+    } catch (error) {
+      console.error("Fetch error:", error);
+      alert("Todos load nahi hue. Flask server check karo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleStatus = async (item) => {
+    const newStatus = item.status === "pending" ? "completed" : "pending";
+    const formData = new FormData();
+    formData.append("status", newStatus);
+
+    try {
+      const response = await fetch(`${API_URL}/items/${item.id}`, {
+        method: "PUT",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Could not update status");
+      }
+
+      await fetchItems();
+    } catch (error) {
+      console.error("Status error:", error);
+      alert(error.message || "Status update nahi hua");
+    }
+  };
+
+  const deleteItem = async (id) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this todo?",
+    );
+
+    if (!confirmed) return;
+    try {
+      const response = await fetch(`${API_URL}/items/${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Could not delete todo");
+      }
+
+      await fetchItems();
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert(error.message || "Todo delete nahi hua");
+    }
+  };
+
+  const editItem = (item) => {
+    setEditId(item.id);
+    setName(item.name);
+    setDescription(item.description || "");
+    setFile(null);
+  };
+
+  const resetForm = () => {
+    setName("");
+    setDescription("");
+    setEditId(null);
+    setFile(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
+    <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-5xl space-y-7">
+        <header>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+            My Todo List
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Organize your work and keep track of your tasks.
           </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        </header>
 
-      <div className="ticks"></div>
+        <Card className="gap-0 overflow-hidden border-slate-200 shadow-sm">
+          <CardHeader className="border-b border-slate-100 px-5 py-4">
+            <CardTitle className="text-lg">
+              {editId !== null ? "Update Task" : "Add a New Task"}
+            </CardTitle>
+            <p className="text-sm text-slate-500">
+              Enter your task details below.
+            </p>
+          </CardHeader>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+          <CardContent className="p-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Input
+                  className="h-10"
+                  placeholder="Enter your task"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="h-10 w-full min-w-0 rounded-md border border-input bg-transparent text-sm
+                  file:mr-3 file:h-full file:rounded-md file:border-0
+                  file:bg-slate-100 file:px-3 file:py-0
+                  hover:file:bg-slate-200"
+                  accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                  onChange={(e) => setFile(e.target.files[0] || null)}
+                />
+              </div>
+
+              <Textarea
+                className="min-h-24 w-full resize-y"
+                placeholder="Add a description (optional)"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={loading}>
+                  {loading
+                    ? "Saving..."
+                    : editId !== null
+                      ? "Update Task"
+                      : "Add Task"}
+                </Button>
+
+                {editId !== null && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={resetForm}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <section className="space-y-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">My Tasks</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Here are all your tasks.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-600 ring-1 ring-slate-200">
+                Total: {items.length}
+              </span>
+
+              <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200">
+                Completed: {completedCount}
+              </span>
+
+              <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200">
+                Pending: {pendingCount}
+              </span>
+            </div>
+          </div>
+
+          {items.length === 0 ? (
+            <Card className="border-dashed shadow-none">
+              <CardContent className="flex flex-col items-center px-4 py-12 text-center">
+                <p className="font-semibold text-slate-800">No tasks yet</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Add your first task using the form above.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {items.map((item) => (
+                <Card
+                  key={item.id}
+                  className="gap-0 overflow-hidden border-slate-200 py-0 shadow-sm transition-shadow hover:shadow-md"
+                >
+                  <CardContent className="p-4 sm:p-5">
+                    <div className="grid grid-cols-[28px_minmax(0,1fr)] items-start gap-3 sm:grid-cols-[36px_minmax(0,1fr)_auto] sm:gap-4">
+                      <div className="flex justify-center pt-1">
+                        <Checkbox
+                          checked={item.status === "completed"}
+                          onCheckedChange={() => toggleStatus(item)}
+                          aria-label={`Mark ${item.name} as ${
+                            item.status === "completed"
+                              ? "pending"
+                              : "completed"
+                          }`}
+                        />
+                      </div>
+
+                      <div className="min-w-0 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3
+                            className={`break-words font-semibold ${
+                              item.status === "completed"
+                                ? "text-slate-400 line-through"
+                                : "text-slate-900"
+                            }`}
+                          >
+                            {item.name}
+                          </h3>
+                        </div>
+
+                        <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-500">
+                          {item.description}
+                        </p>
+
+                        {item.image && (
+                          <img
+                            src={`${API_URL}${item.image}`}
+                            alt={item.name}
+                            className="mt-2 max-h-20 w-auto max-w-full rounded-lg border border-slate-200 object-cover"
+                          />
+                        )}
+                      </div>
+
+                      <div className="col-start-2 flex flex-wrap items-start gap-2 border-t border-slate-100 pt-3 sm:col-start-3 sm:row-start-1 sm:flex-nowrap sm:justify-end sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => editItem(item)}
+                        >
+                          Edit
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteItem(item.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
